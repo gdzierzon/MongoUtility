@@ -25,5 +25,10 @@ namespace MongoUtility.Common.Mongo
                 DatabaseList.Add(database["name"].AsString);
             }
         }
+
+        public void DropDatabase(string databaseName)
+        {
+            Client.DropDatabase(databaseName);
+        }
     }
 }
