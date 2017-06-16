@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoUtility.Common.Interfaces.Mongo;
@@ -8,6 +9,8 @@ namespace MongoUtility.Common.Mongo
 {
     public class Server
     {
+        private MongoUtility.Common.Rx.EventAggregator EventAggregator => MongoUtility.Common.Rx.EventAggregator.Aggregator;
+
         private IMongoClient Client { get; set; }
 
         public string ServerName { get; set; }
@@ -27,7 +30,7 @@ namespace MongoUtility.Common.Mongo
             {
                 var name = database["name"].AsString;
                 var size = database["sizeOnDisk"].AsDouble;
-                var isSystem = name == "local";
+                var isSystem = name == "local" || name =="admin";
 
                 var db = new Database
                 {
@@ -62,6 +65,19 @@ namespace MongoUtility.Common.Mongo
                     var message = ex.ToString();
                 }
             }
+        }
+
+        public void BackupDatabase(string databaseName, string backupLocation)
+        {
+
+            var currentDB = Client.GetDatabase(databaseName);
+            var collection = currentDB.GetCollection<BsonDocument>("Metrics");
+
+            var items = collection.FindAsync(new BsonDocument()).Result.ToListAsync().Result;
+            Stream ms = new MemoryStream();
+            StreamWriter sw = new StreamWriter($"{backupLocation}\\Metrics.bson");
+            BinaryWriter br = new BinaryWriter(sw.BaseStream);
+            //br.Write();
         }
 
         public void DropDatabase(string databaseName)

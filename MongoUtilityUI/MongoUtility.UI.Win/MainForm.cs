@@ -117,127 +117,25 @@ namespace MongoUtility.UI.Win
         private void SetupSubscriptions()
         {
             //backup subscriptions
-            subscriptions.Add(EventAggregator.GetEvent<BackupMessage>()
-                .Subscribe(m =>
-                {
-                    DisplayBackupProgress(m.Body);
-                }));
-
-            subscriptions.Add(EventAggregator.GetEvent<BackupMessage>()
-                .Where(m => m.Status == ProcessStatuses.Completed)
-                .Subscribe(m =>
-                {
-                    Compression.Zip(BackupLocation, BackupFile);
-
-                    EventAggregator.Publish(new BackupMessage()
-                    {
-                        Body = $"{BackupDatabaseName} has been compressed",
-                        MessageType = MessageTypes.Information,
-                        Status = ProcessStatuses.ProgressUpdate
-                    });
-
-                    if (dropDatabaseCheck.Checked)
-                    {
-                        MongoServer.DropDatabase(BackupDatabaseName);
-                        if (this.InvokeRequired)
-                        {
-                            var mi = new MethodInvoker(LoadMongoTree);
-                            this.Invoke(mi);
-                        }
-                        else
-                        {
-                            LoadMongoTree();
-                        }
-                    }
-
-                    EventAggregator.Publish(new BackupMessage()
-                    {
-                        Body = $"Backup of {BackupDatabaseName} has completed",
-                        MessageType = MessageTypes.Information,
-                        Status = ProcessStatuses.ProgressUpdate
-                    });
-
-                    if (this.InvokeRequired)
-                    {
-                        var mi = new MethodInvoker(EnableButtons);
-                        this.Invoke(mi);
-                    }
-                    else
-                    {
-                        EnableButtons();
-                    }
-                }));
-
-            //Restore subscriptions
-            subscriptions.Add(EventAggregator.GetEvent<RestoreMessage>()
-                .Subscribe(m =>
-                {
-                    DisplayRestoreProgress();
-                }));
-
-            subscriptions.Add(EventAggregator.GetEvent<RestoreMessage>()
-                .Where(m => m.Status == ProcessStatuses.Completed)
-                .Subscribe(m =>
-                {
-                    Directory.Delete(RestoreTempFolder);
-                    if (this.InvokeRequired)
-                    {
-                        var mi = new MethodInvoker(LoadMongoTree);
-                        this.Invoke(mi);
-                    }
-                    else
-                    {
-                        LoadMongoTree();
-                    }
-
-                    EventAggregator.Publish(new BackupMessage()
-                    {
-                        Body = $"Restore of {RestoreDatabaseName} has completed",
-                        MessageType = MessageTypes.Information,
-                        Status = ProcessStatuses.ProgressUpdate
-                    });
-
-                    if (this.InvokeRequired)
-                    {
-                        var mi = new MethodInvoker(EnableButtons);
-                        this.Invoke(mi);
-                    }
-                    else
-                    {
-                        EnableButtons();
-                    }
-                }));
+            subscriptions.Add(EventAggregator.GetEvent<MongoMessage>()
+                .Subscribe(UpdateProgress));
+            
         }
 
-        private void DisplayBackupProgress(object item)
+        private void UpdateProgress(object item)
         {
-            if (backupProgressList.InvokeRequired)
+            if (progressList.InvokeRequired)
             {
-                var ai = new AddItemInvoker(DisplayBackupProgress);
+                var ai = new AddItemInvoker(UpdateProgress);
                 this.Invoke(ai, item);
             }
             else
             {
-                backupProgressList.Items.Add(item);
-                int visibleItems = backupProgressList.ClientSize.Height / backupProgressList.ItemHeight;
-                backupProgressList.TopIndex = Math.Max(backupProgressList.Items.Count - visibleItems + 1, 0);
+                progressList.Items.Add(item);
+                int visibleItems = progressList.ClientSize.Height / progressList.ItemHeight;
+                progressList.TopIndex = Math.Max(progressList.Items.Count - visibleItems + 1, 0);
             }
 
-        }
-
-        private void DisplayRestoreProgress()
-        {
-            if (restoreRichText.InvokeRequired)
-            {
-                var mi = new MethodInvoker(DisplayRestoreProgress);
-                this.Invoke(mi);
-            }
-            else
-            {
-                restoreRichText.Rtf = RestoreMessageBuilder.ToString();
-                restoreRichText.SelectionStart = restoreRichText.Text.Length;
-                restoreRichText.ScrollToCaret();
-            }
         }
 
         private void InitializeDialogs()
@@ -316,17 +214,37 @@ namespace MongoUtility.UI.Win
 
         private void backupButton_Click(object sender, EventArgs e)
         {
-            EnableButtons(false);
-            backupProgressList.Items.Clear();
-
             var dump = new MongoDump()
             {
                 Database = BackupDatabaseName,
-                BackupLocation = BackupLocation
+                BackupLocation = BackupLocation,
+                ZipFile = BackupFile
             };
 
-            Thread t = new Thread(dump.BackupDatabase);
-            t.Start();
+            dump.BackupDatabase();
+
+            if (dropDatabaseCheck.Checked)
+            {
+                MongoServer.DropDatabase(BackupDatabaseName);
+                if (this.InvokeRequired)
+                {
+                    var mi = new MethodInvoker(LoadMongoTree);
+                    this.Invoke(mi);
+                }
+                else
+                {
+                    LoadMongoTree();
+                }
+            }
+
+            EventAggregator.Publish(new MongoMessage()
+            {
+                Body = $"Backup of {BackupDatabaseName} has completed",
+                Action = ActionTypes.Backup,
+                MessageType = MessageTypes.Information,
+                Status = ProcessStatuses.ProgressUpdate
+            });
+            
 
         }
 
@@ -342,27 +260,52 @@ namespace MongoUtility.UI.Win
 
         private void importDatabaseButton_Click(object sender, EventArgs e)
         {
-            RestoreMessageBuilder = new StringBuilder();
-            EnableButtons(false);
-            restoreRichText.Text = "";
-            
             try
             {
                 RestoreTempFolder = $"{RestoreFileDirectory}\\temp{Guid.NewGuid()}";
+
+
+                EventAggregator.Publish(new MongoMessage()
+                {
+                    Body = $"Start restore of {RestoreDatabaseName}.",
+                    Action = ActionTypes.Restore,
+                    MessageType = MessageTypes.Information,
+                    Status = ProcessStatuses.ProgressUpdate
+                });
+
                 Compression.UnZip(RestoreFileName, RestoreTempFolder);
-                
+
+
+                EventAggregator.Publish(new MongoMessage()
+                {
+                    Body = $"{RestoreFileName} has been unpacked.",
+                    Action = ActionTypes.Restore,
+                    MessageType = MessageTypes.Information,
+                    Status = ProcessStatuses.ProgressUpdate
+                });
+
                 var restore = new MongoRestore()
                 {
                     DatabaseName = RestoreDatabaseName,
                     BackupLocation = RestoreDatabaseLocation
                 };
+                restore.RestoreDatabase();
 
-                Thread t = new Thread(restore.RestoreDatabase);
-                t.Start();
+                Directory.Delete(RestoreTempFolder);
+                
+                LoadMongoTree();
+            
+                EventAggregator.Publish(new MongoMessage()
+                {
+                    Body = $"Restore of {RestoreDatabaseName} has completed",
+                    Action = ActionTypes.Restore,
+                    MessageType = MessageTypes.Information,
+                    Status = ProcessStatuses.ProgressUpdate
+                });
+
             }
             catch (Exception ex)
             {
-                restoreRichText.Text = ex.ToString();
             }
                 
         }
@@ -387,8 +330,6 @@ namespace MongoUtility.UI.Win
 
         private void renameDatabaseButton_Click(object sender, EventArgs e)
         {
-            EnableButtons(false);
-
             var currentDatabase = renameCurrentDatabaseTextBox.Text;
             var guid = Guid.NewGuid();
             var tempFolder = $"{DefaultDirectory}\\temp{guid}";
@@ -407,10 +348,6 @@ namespace MongoUtility.UI.Win
             {
                 toolStripStatusLabel.Text = $"There was an error renaming {currentDatabase}.";
             }
-            finally
-            {
-                EnableButtons(true);
-            }
         }
 
         private void dropDatabaseToolStripMenuItem_Click(object sender, EventArgs e)
@@ -418,29 +355,6 @@ namespace MongoUtility.UI.Win
             MongoServer.DropDatabase(SelectedDatabase);
         }
 
-
-        #region Helper Functions
-
-        private void EnableButtons(bool enabled)
-        {
-            backupButton.Enabled = enabled;
-            importDatabaseButton.Enabled = enabled;
-            renameDatabaseButton.Enabled = enabled;
-        }
-
-        private void EnableButtons()
-        {
-            EnableButtons(true);
-        }
-        private void DisableButtons()
-        {
-            EnableButtons(false);
-        }
-
-        #endregion
-
-        private void backupProgressList_DrawItem(object sender, DrawItemEventArgs e)
-        {
-        }
+        
     }
 }

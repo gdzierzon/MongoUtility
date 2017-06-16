@@ -46,7 +46,6 @@
             this.mongoServerLabel = new System.Windows.Forms.Label();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.backupPage = new System.Windows.Forms.TabPage();
-            this.backupProgressList = new System.Windows.Forms.ListBox();
             this.dropDatabaseCheck = new System.Windows.Forms.CheckBox();
             this.backupButton = new System.Windows.Forms.Button();
             this.backupLocationButton = new System.Windows.Forms.Button();
@@ -55,7 +54,6 @@
             this.databaseBackupTextBox = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
             this.restorePage = new System.Windows.Forms.TabPage();
-            this.restoreRichText = new System.Windows.Forms.RichTextBox();
             this.importDatabaseButton = new System.Windows.Forms.Button();
             this.importFileLocationButton = new System.Windows.Forms.Button();
             this.importFileTextBox = new System.Windows.Forms.TextBox();
@@ -71,6 +69,7 @@
             this.folderBrowserDialog = new System.Windows.Forms.FolderBrowserDialog();
             this.databaseContextMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.dropDatabaseToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.progressList = new System.Windows.Forms.ListBox();
             this.menuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
@@ -161,6 +160,7 @@
             // 
             // splitContainer1.Panel2
             // 
+            this.splitContainer1.Panel2.Controls.Add(this.progressList);
             this.splitContainer1.Panel2.Controls.Add(this.tabControl1);
             this.splitContainer1.Size = new System.Drawing.Size(1053, 444);
             this.splitContainer1.SplitterDistance = 257;
@@ -208,18 +208,17 @@
             this.tabControl1.Controls.Add(this.backupPage);
             this.tabControl1.Controls.Add(this.restorePage);
             this.tabControl1.Controls.Add(this.clonePage);
-            this.tabControl1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tabControl1.Dock = System.Windows.Forms.DockStyle.Top;
             this.tabControl1.Font = new System.Drawing.Font("Corbel", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.tabControl1.Location = new System.Drawing.Point(0, 0);
             this.tabControl1.Margin = new System.Windows.Forms.Padding(4);
             this.tabControl1.Name = "tabControl1";
             this.tabControl1.SelectedIndex = 0;
-            this.tabControl1.Size = new System.Drawing.Size(790, 444);
+            this.tabControl1.Size = new System.Drawing.Size(790, 163);
             this.tabControl1.TabIndex = 0;
             // 
             // backupPage
             // 
-            this.backupPage.Controls.Add(this.backupProgressList);
             this.backupPage.Controls.Add(this.dropDatabaseCheck);
             this.backupPage.Controls.Add(this.backupButton);
             this.backupPage.Controls.Add(this.backupLocationButton);
@@ -231,24 +230,10 @@
             this.backupPage.Margin = new System.Windows.Forms.Padding(4);
             this.backupPage.Name = "backupPage";
             this.backupPage.Padding = new System.Windows.Forms.Padding(4);
-            this.backupPage.Size = new System.Drawing.Size(782, 412);
+            this.backupPage.Size = new System.Drawing.Size(782, 214);
             this.backupPage.TabIndex = 0;
             this.backupPage.Text = "Backup";
             this.backupPage.UseVisualStyleBackColor = true;
-            // 
-            // backupProgressList
-            // 
-            this.backupProgressList.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.backupProgressList.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
-            this.backupProgressList.ForeColor = System.Drawing.Color.White;
-            this.backupProgressList.FormattingEnabled = true;
-            this.backupProgressList.ItemHeight = 19;
-            this.backupProgressList.Location = new System.Drawing.Point(0, 133);
-            this.backupProgressList.Name = "backupProgressList";
-            this.backupProgressList.Size = new System.Drawing.Size(782, 270);
-            this.backupProgressList.TabIndex = 7;
             // 
             // dropDatabaseCheck
             // 
@@ -322,7 +307,6 @@
             // 
             // restorePage
             // 
-            this.restorePage.Controls.Add(this.restoreRichText);
             this.restorePage.Controls.Add(this.importDatabaseButton);
             this.restorePage.Controls.Add(this.importFileLocationButton);
             this.restorePage.Controls.Add(this.importFileTextBox);
@@ -333,21 +317,10 @@
             this.restorePage.Margin = new System.Windows.Forms.Padding(4);
             this.restorePage.Name = "restorePage";
             this.restorePage.Padding = new System.Windows.Forms.Padding(4);
-            this.restorePage.Size = new System.Drawing.Size(782, 412);
+            this.restorePage.Size = new System.Drawing.Size(782, 131);
             this.restorePage.TabIndex = 1;
             this.restorePage.Text = "Restore";
             this.restorePage.UseVisualStyleBackColor = true;
-            // 
-            // restoreRichText
-            // 
-            this.restoreRichText.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
-            this.restoreRichText.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.restoreRichText.ForeColor = System.Drawing.Color.White;
-            this.restoreRichText.Location = new System.Drawing.Point(0, 129);
-            this.restoreRichText.Name = "restoreRichText";
-            this.restoreRichText.Size = new System.Drawing.Size(782, 284);
-            this.restoreRichText.TabIndex = 12;
-            this.restoreRichText.Text = "";
             // 
             // importDatabaseButton
             // 
@@ -418,7 +391,7 @@
             this.clonePage.Controls.Add(this.label5);
             this.clonePage.Location = new System.Drawing.Point(4, 28);
             this.clonePage.Name = "clonePage";
-            this.clonePage.Size = new System.Drawing.Size(782, 412);
+            this.clonePage.Size = new System.Drawing.Size(782, 214);
             this.clonePage.TabIndex = 2;
             this.clonePage.Text = "Clone";
             this.clonePage.UseVisualStyleBackColor = true;
@@ -489,6 +462,18 @@
             this.dropDatabaseToolStripMenuItem.Size = new System.Drawing.Size(151, 22);
             this.dropDatabaseToolStripMenuItem.Text = "&Drop Database";
             this.dropDatabaseToolStripMenuItem.Click += new System.EventHandler(this.dropDatabaseToolStripMenuItem_Click);
+            // 
+            // progressList
+            // 
+            this.progressList.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
+            this.progressList.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.progressList.ForeColor = System.Drawing.Color.White;
+            this.progressList.FormattingEnabled = true;
+            this.progressList.ItemHeight = 19;
+            this.progressList.Location = new System.Drawing.Point(0, 163);
+            this.progressList.Name = "progressList";
+            this.progressList.Size = new System.Drawing.Size(790, 281);
+            this.progressList.TabIndex = 8;
             // 
             // MainForm
             // 
@@ -566,8 +551,7 @@
         private System.Windows.Forms.ToolStripMenuItem dropDatabaseToolStripMenuItem;
         private System.Windows.Forms.ToolStripProgressBar toolStripProgressBar;
         private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel;
-        private System.Windows.Forms.ListBox backupProgressList;
-        private System.Windows.Forms.RichTextBox restoreRichText;
+        private System.Windows.Forms.ListBox progressList;
     }
 }
 

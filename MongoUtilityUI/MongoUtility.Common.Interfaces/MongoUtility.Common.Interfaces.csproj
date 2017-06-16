@@ -57,12 +57,12 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Messaging\BackupMessage.cs" />
+    <Compile Include="Messaging\ActionTypes.cs" />
     <Compile Include="Messaging\IMessage.cs" />
     <Compile Include="Messaging\Message.cs" />
     <Compile Include="Messaging\MessageTypes.cs" />
+    <Compile Include="Messaging\MongoMessage.cs" />
     <Compile Include="Messaging\ProcessStatuses.cs" />
-    <Compile Include="Messaging\RestoreMessage.cs" />
     <Compile Include="Mongo\Database.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

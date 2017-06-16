@@ -6,11 +6,14 @@ using System.Text;
 using System.Threading.Tasks;
 using ICSharpCode.SharpZipLib.Core;
 using ICSharpCode.SharpZipLib.Zip;
+using MongoUtility.Common.Interfaces.Messaging;
 
 namespace MongoUtility.Common.SharpZip
 {
     public class Compression
     {
+        private static MongoUtility.Common.Rx.EventAggregator EventAggregator => MongoUtility.Common.Rx.EventAggregator.Aggregator;
+
         public static void Zip(string folderName, string outputFile)
         {
 
@@ -31,9 +34,8 @@ namespace MongoUtility.Common.SharpZip
             zipStream.IsStreamOwner = true; // Makes the Close also Close the underlying stream
             zipStream.Close();
 
-            //clean directory
-            Directory.Delete(folderName,true);
         }
+
         private static void CompressFolder(string path, ZipOutputStream zipStream, int folderOffset)
         {
 
@@ -93,14 +95,14 @@ namespace MongoUtility.Common.SharpZip
                 {
                     if (!zipEntry.IsFile)
                     {
-                        continue;           // Ignore directories
+                        continue; // Ignore directories
                     }
                     String entryFileName = zipEntry.Name;
                     // to remove the folder from the entry:- entryFileName = Path.GetFileName(entryFileName);
                     // Optionally match entrynames against a selection list here to skip as desired.
                     // The unpacked length is available in the zipEntry.Size property.
 
-                    byte[] buffer = new byte[4096];     // 4K is optimum
+                    byte[] buffer = new byte[4096]; // 4K is optimum
                     Stream zipStream = zf.GetInputStream(zipEntry);
 
                     // Manipulate the output filename here as desired.
@@ -117,6 +119,17 @@ namespace MongoUtility.Common.SharpZip
                         StreamUtils.Copy(zipStream, streamWriter, buffer);
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+
+                EventAggregator.Publish(new MongoMessage()
+                {
+                    Body = $"An error has occurred. {zipFile} could not be unzipped.",
+                    Action = ActionTypes.Restore,
+                    MessageType = MessageTypes.Error,
+                    Status = ProcessStatuses.Error
+                });
             }
             finally
             {
