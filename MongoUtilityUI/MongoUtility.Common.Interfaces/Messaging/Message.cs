@@ -8,5 +8,15 @@
     public class Message<T> : Message, IMessage<T>
     {
         public T Body { get; set; }
+
+        public Message(T body)
+        {
+            Body = body;
+        }
+
+        public Message()
+        {
+            
+        }
     }
 }

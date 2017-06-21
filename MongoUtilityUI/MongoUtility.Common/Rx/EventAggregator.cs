@@ -2,11 +2,12 @@
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using MongoUtility.Common.Interfaces.Rx;
 
 namespace MongoUtility.Common.Rx
 {
 
-    public class EventAggregator
+    public class EventAggregator: IEventAggregator
     {
         #region singleton contstruction
 

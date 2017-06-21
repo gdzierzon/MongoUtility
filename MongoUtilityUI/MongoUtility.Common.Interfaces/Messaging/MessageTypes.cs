@@ -2,8 +2,8 @@
 {
     public enum MessageTypes
     {
-        Information,
-        Warning,
-        Error
+        Backup,
+        Restore,
+        Copy
     }
 }

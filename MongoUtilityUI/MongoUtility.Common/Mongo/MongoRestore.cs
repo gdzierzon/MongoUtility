@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Threading;
+using MongoUtility.Common.Interfaces.Dto;
+using MongoUtility.Common.Interfaces.Log;
 using MongoUtility.Common.Interfaces.Messaging;
 using MongoUtility.Common.Interfaces.Mongo;
 using MongoUtility.Common.Rx;
@@ -9,11 +11,14 @@ namespace MongoUtility.Common.Mongo
 {
     public class MongoRestore
     {
-        private MongoUtility.Common.Rx.EventAggregator EventAggregator => MongoUtility.Common.Rx.EventAggregator.Aggregator;
         private const string Executable = "mongorestore.exe";
 
-        public string DatabaseName { get; set; }
-        public string BackupLocation { get; set; }
+        private RestoreInformation restore { get; set; }
+
+        public MongoRestore(RestoreInformation restore)
+        {
+            this.restore = restore;
+        }
 
         public void RestoreDatabase()
         {
@@ -25,7 +30,7 @@ namespace MongoUtility.Common.Mongo
                     StartInfo = new ProcessStartInfo()
                     {
                         FileName = Executable,
-                        Arguments = $"/db:{DatabaseName} /dir:\"{BackupLocation}\"",
+                        Arguments = $"/db:{restore.DatabaseRestoreName} /dir:\"{restore.DatabaseDirectory}\"",
                         UseShellExecute = true,
                         RedirectStandardOutput = false,
                         RedirectStandardError = false,
@@ -57,27 +62,13 @@ namespace MongoUtility.Common.Mongo
                 while (!process.HasExited)
                 {
                     Thread.Sleep(500);
-
-                    //EventAggregator.Publish(new MongoMessage()
-                    //{
-                    //    Body = $"restoring {DatabaseName} ...",
-                    //    Action = ActionTypes.Restore,
-                    //    MessageType = MessageTypes.Information,
-                    //    Status = ProcessStatuses.ProgressUpdate
-                    //});
                 }
 
                 process.Dispose();
             }
             catch (Exception e)
             {
-                EventAggregator.Publish(new MongoMessage()
-                {
-                    Body = $"An error has occurred. {DatabaseName} could not be restored.",
-                    Action = ActionTypes.Restore,
-                    MessageType = MessageTypes.Error,
-                    Status = ProcessStatuses.Error
-                });
+                restore.Log(e.Message, LogLevel.Error);
             }
         }
     }

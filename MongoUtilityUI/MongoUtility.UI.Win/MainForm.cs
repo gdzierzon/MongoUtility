@@ -11,9 +11,11 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using MongoUtility.Common.Interfaces.Dto;
 using MongoUtility.Common.Interfaces.Messaging;
 using MongoUtility.Common.Mongo;
 using MongoUtility.Common.SharpZip;
+using MongoUtility.UI.Win.Controllers;
 
 namespace MongoUtility.UI.Win
 {
@@ -23,69 +25,22 @@ namespace MongoUtility.UI.Win
         private MongoUtility.Common.Rx.EventAggregator EventAggregator => MongoUtility.Common.Rx.EventAggregator.Aggregator;
         private readonly IList<IDisposable> subscriptions = new List<IDisposable>();
 
+        public BackupController BackupController { get; } = BackupController.Controller;
+        public RestoreController RestoreController { get; } = RestoreController.Controller;
+
         #region backup variables
 
         public string BackupDatabaseName => databaseBackupTextBox.Text;
 
         public string BackupFile => backupLocationTextBox.Text;
 
-        private string BackupDirectory
-        {
-            get
-            {
-                FileInfo fi = new FileInfo(BackupFile);
-                return fi.DirectoryName;
-            }
-        }
-
-        private string BackupFileName
-        {
-            get
-            {
-                FileInfo fi = new FileInfo(BackupFile);
-                string fileName = fi.Name.Replace(fi.Extension, "");
-
-                return fileName;
-            }
-        }
-
-        private string BackupLocation
-        {
-            get { return $"{BackupDirectory}\\{BackupFileName}"; }
-        }
         #endregion
 
         #region restore variables
         
         public string RestoreFileName => importFileTextBox.Text;
 
-        private string RestoreFileDirectory
-        {
-            get
-            {
-
-                FileInfo fi = new FileInfo(RestoreFileName);
-                return fi.DirectoryName;
-            }
-        }
-
         private string RestoreDatabaseName => restoreDatabaseTextBox.Text;
-
-        public string RestoreTempFolder { get; set; }
-
-        public string RestoreFromDatabaseName
-        {
-            get
-            {
-
-                var di = new DirectoryInfo(RestoreTempFolder);
-                return di.GetDirectories()[0].Name;
-            }
-        }
-        
-        private string RestoreDatabaseLocation => $"{RestoreTempFolder}\\{RestoreFromDatabaseName}";
-
-        private StringBuilder RestoreMessageBuilder = new StringBuilder();
 
         #endregion
 
@@ -117,8 +72,8 @@ namespace MongoUtility.UI.Win
         private void SetupSubscriptions()
         {
             //backup subscriptions
-            subscriptions.Add(EventAggregator.GetEvent<MongoMessage>()
-                .Subscribe(UpdateProgress));
+            subscriptions.Add(EventAggregator.GetEvent<Message<BackupInformation>>()
+                .Subscribe(msg => UpdateProgress(msg.Body)));
             
         }
 
@@ -134,6 +89,12 @@ namespace MongoUtility.UI.Win
                 progressList.Items.Add(item);
                 int visibleItems = progressList.ClientSize.Height / progressList.ItemHeight;
                 progressList.TopIndex = Math.Max(progressList.Items.Count - visibleItems + 1, 0);
+
+                var message = item as BackupInformation;
+                if(message != null && message.Status == ProcessStatuses.Completed)
+                {
+                    LoadMongoTree();
+                }
             }
 
         }
@@ -214,38 +175,14 @@ namespace MongoUtility.UI.Win
 
         private void backupButton_Click(object sender, EventArgs e)
         {
-            var dump = new MongoDump()
+            var backupInfo = new BackupInformation(BackupDatabaseName, BackupFile, EventAggregator, MongoServer)
             {
-                Database = BackupDatabaseName,
-                BackupLocation = BackupLocation,
-                ZipFile = BackupFile
+                Compress = true,
+                DropDatabase = dropDatabaseCheck.Checked
             };
 
-            dump.BackupDatabase();
-
-            if (dropDatabaseCheck.Checked)
-            {
-                MongoServer.DropDatabase(BackupDatabaseName);
-                if (this.InvokeRequired)
-                {
-                    var mi = new MethodInvoker(LoadMongoTree);
-                    this.Invoke(mi);
-                }
-                else
-                {
-                    LoadMongoTree();
-                }
-            }
-
-            EventAggregator.Publish(new MongoMessage()
-            {
-                Body = $"Backup of {BackupDatabaseName} has completed",
-                Action = ActionTypes.Backup,
-                MessageType = MessageTypes.Information,
-                Status = ProcessStatuses.ProgressUpdate
-            });
-            
-
+            EventAggregator.Publish(new Message<BackupInformation>(backupInfo)
+            { MessageType = MessageTypes.Backup });
         }
 
         private void importFileLocationButton_Click(object sender, EventArgs e)
@@ -260,54 +197,14 @@ namespace MongoUtility.UI.Win
 
         private void importDatabaseButton_Click(object sender, EventArgs e)
         {
-            try
+
+            var restoreInfo = new RestoreInformation(RestoreDatabaseName, RestoreFileName, EventAggregator, MongoServer);
+
+            EventAggregator.Publish(new Message<RestoreInformation>(restoreInfo)
             {
-                RestoreTempFolder = $"{RestoreFileDirectory}\\temp{Guid.NewGuid()}";
+                MessageType = MessageTypes.Restore
+            });
 
-
-                EventAggregator.Publish(new MongoMessage()
-                {
-                    Body = $"Start restore of {RestoreDatabaseName}.",
-                    Action = ActionTypes.Restore,
-                    MessageType = MessageTypes.Information,
-                    Status = ProcessStatuses.ProgressUpdate
-                });
-
-                Compression.UnZip(RestoreFileName, RestoreTempFolder);
-
-
-                EventAggregator.Publish(new MongoMessage()
-                {
-                    Body = $"{RestoreFileName} has been unpacked.",
-                    Action = ActionTypes.Restore,
-                    MessageType = MessageTypes.Information,
-                    Status = ProcessStatuses.ProgressUpdate
-                });
-
-                var restore = new MongoRestore()
-                {
-                    DatabaseName = RestoreDatabaseName,
-                    BackupLocation = RestoreDatabaseLocation
-                };
-                restore.RestoreDatabase();
-
-                Directory.Delete(RestoreTempFolder);
-                
-                LoadMongoTree();
-            
-                EventAggregator.Publish(new MongoMessage()
-                {
-                    Body = $"Restore of {RestoreDatabaseName} has completed",
-                    Action = ActionTypes.Restore,
-                    MessageType = MessageTypes.Information,
-                    Status = ProcessStatuses.ProgressUpdate
-                });
-
-            }
-            catch (Exception ex)
-            {
-            }
-                
         }
 
 
@@ -353,8 +250,13 @@ namespace MongoUtility.UI.Win
         private void dropDatabaseToolStripMenuItem_Click(object sender, EventArgs e)
         {
             MongoServer.DropDatabase(SelectedDatabase);
+
+            LoadMongoTree();
         }
 
-        
+        private void refreshToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            LoadMongoTree();
+        }
     }
 }

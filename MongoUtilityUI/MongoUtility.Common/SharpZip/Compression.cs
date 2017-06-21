@@ -6,33 +6,56 @@ using System.Text;
 using System.Threading.Tasks;
 using ICSharpCode.SharpZipLib.Core;
 using ICSharpCode.SharpZipLib.Zip;
+using MongoUtility.Common.Interfaces.Dto;
+using MongoUtility.Common.Interfaces.Log;
 using MongoUtility.Common.Interfaces.Messaging;
 
 namespace MongoUtility.Common.SharpZip
 {
     public class Compression
     {
-        private static MongoUtility.Common.Rx.EventAggregator EventAggregator => MongoUtility.Common.Rx.EventAggregator.Aggregator;
 
-        public static void Zip(string folderName, string outputFile)
+        public static void Zip(BackupInformation backup)
         {
+            var folderName = backup.Directory;
+            var outputFile = backup.File;
 
-            FileStream fsOut = File.Create(outputFile);
-            ZipOutputStream zipStream = new ZipOutputStream(fsOut);
+            backup.Log("Compression started.");
 
-            zipStream.SetLevel(3); //0-9, 9 being the highest level of compression
+            ZipOutputStream zipStream = null;
 
-            zipStream.Password = null;  // optional. Null is the same as not setting. Required if using AES.
+            try
+            {
 
-            // This setting will strip the leading part of the folder path in the entries, to
-            // make the entries relative to the starting folder.
-            // To include the full path for each entry up to the drive root, assign folderOffset = 0.
-            int folderOffset = folderName.Length + (folderName.EndsWith("\\") ? 0 : 1);
 
-            CompressFolder(folderName, zipStream, folderOffset);
+                FileStream fsOut = File.Create(outputFile);
+                zipStream = new ZipOutputStream(fsOut);
 
-            zipStream.IsStreamOwner = true; // Makes the Close also Close the underlying stream
-            zipStream.Close();
+                zipStream.SetLevel(3); //0-9, 9 being the highest level of compression
+
+                zipStream.Password = null; // optional. Null is the same as not setting. Required if using AES.
+
+                // This setting will strip the leading part of the folder path in the entries, to
+                // make the entries relative to the starting folder.
+                // To include the full path for each entry up to the drive root, assign folderOffset = 0.
+                int folderOffset = folderName.Length + (folderName.EndsWith("\\") ? 0 : 1);
+
+                CompressFolder(folderName, zipStream, folderOffset);
+
+                backup.Log("Compression completed.");
+            }
+            catch (Exception ex)
+            {
+                backup.Log(ex.Message, LogLevel.Error);
+            }
+            finally
+            {
+                if (zipStream != null)
+                {
+                    zipStream.IsStreamOwner = true; // Makes the Close also Close the underlying stream
+                    zipStream.Close();
+                }
+            }
 
         }
 
@@ -80,8 +103,11 @@ namespace MongoUtility.Common.SharpZip
             }
         }
 
-        public static void UnZip(string zipFile, string outFolder)
+        public static void UnZip(RestoreInformation restore)
         {
+            var zipFile = restore.File;
+            var outFolder = restore.Directory;
+
             ZipFile zf = null;
             try
             {
@@ -122,14 +148,7 @@ namespace MongoUtility.Common.SharpZip
             }
             catch (Exception ex)
             {
-
-                EventAggregator.Publish(new MongoMessage()
-                {
-                    Body = $"An error has occurred. {zipFile} could not be unzipped.",
-                    Action = ActionTypes.Restore,
-                    MessageType = MessageTypes.Error,
-                    Status = ProcessStatuses.Error
-                });
+                restore.Log(ex.Message, LogLevel.Error);
             }
             finally
             {

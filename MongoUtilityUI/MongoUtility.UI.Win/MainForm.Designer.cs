@@ -44,6 +44,7 @@
             this.mongoTree = new System.Windows.Forms.TreeView();
             this.panel1 = new System.Windows.Forms.Panel();
             this.mongoServerLabel = new System.Windows.Forms.Label();
+            this.progressList = new System.Windows.Forms.ListBox();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.backupPage = new System.Windows.Forms.TabPage();
             this.dropDatabaseCheck = new System.Windows.Forms.CheckBox();
@@ -69,7 +70,9 @@
             this.folderBrowserDialog = new System.Windows.Forms.FolderBrowserDialog();
             this.databaseContextMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.dropDatabaseToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.progressList = new System.Windows.Forms.ListBox();
+            this.serverContextMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.refreshToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.refreshToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
@@ -82,6 +85,7 @@
             this.restorePage.SuspendLayout();
             this.clonePage.SuspendLayout();
             this.databaseContextMenu.SuspendLayout();
+            this.serverContextMenu.SuspendLayout();
             this.SuspendLayout();
             // 
             // mongoImagesList
@@ -203,6 +207,18 @@
             this.mongoServerLabel.TabIndex = 0;
             this.mongoServerLabel.Text = "Mongo Server";
             // 
+            // progressList
+            // 
+            this.progressList.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
+            this.progressList.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.progressList.ForeColor = System.Drawing.Color.White;
+            this.progressList.FormattingEnabled = true;
+            this.progressList.ItemHeight = 19;
+            this.progressList.Location = new System.Drawing.Point(0, 163);
+            this.progressList.Name = "progressList";
+            this.progressList.Size = new System.Drawing.Size(790, 281);
+            this.progressList.TabIndex = 8;
+            // 
             // tabControl1
             // 
             this.tabControl1.Controls.Add(this.backupPage);
@@ -230,7 +246,7 @@
             this.backupPage.Margin = new System.Windows.Forms.Padding(4);
             this.backupPage.Name = "backupPage";
             this.backupPage.Padding = new System.Windows.Forms.Padding(4);
-            this.backupPage.Size = new System.Drawing.Size(782, 214);
+            this.backupPage.Size = new System.Drawing.Size(782, 131);
             this.backupPage.TabIndex = 0;
             this.backupPage.Text = "Backup";
             this.backupPage.UseVisualStyleBackColor = true;
@@ -391,7 +407,7 @@
             this.clonePage.Controls.Add(this.label5);
             this.clonePage.Location = new System.Drawing.Point(4, 28);
             this.clonePage.Name = "clonePage";
-            this.clonePage.Size = new System.Drawing.Size(782, 214);
+            this.clonePage.Size = new System.Drawing.Size(782, 131);
             this.clonePage.TabIndex = 2;
             this.clonePage.Text = "Clone";
             this.clonePage.UseVisualStyleBackColor = true;
@@ -452,9 +468,10 @@
             // databaseContextMenu
             // 
             this.databaseContextMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.refreshToolStripMenuItem1,
             this.dropDatabaseToolStripMenuItem});
             this.databaseContextMenu.Name = "databaseContextMenu";
-            this.databaseContextMenu.Size = new System.Drawing.Size(152, 26);
+            this.databaseContextMenu.Size = new System.Drawing.Size(153, 70);
             // 
             // dropDatabaseToolStripMenuItem
             // 
@@ -463,17 +480,26 @@
             this.dropDatabaseToolStripMenuItem.Text = "&Drop Database";
             this.dropDatabaseToolStripMenuItem.Click += new System.EventHandler(this.dropDatabaseToolStripMenuItem_Click);
             // 
-            // progressList
+            // serverContextMenu
             // 
-            this.progressList.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
-            this.progressList.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.progressList.ForeColor = System.Drawing.Color.White;
-            this.progressList.FormattingEnabled = true;
-            this.progressList.ItemHeight = 19;
-            this.progressList.Location = new System.Drawing.Point(0, 163);
-            this.progressList.Name = "progressList";
-            this.progressList.Size = new System.Drawing.Size(790, 281);
-            this.progressList.TabIndex = 8;
+            this.serverContextMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.refreshToolStripMenuItem});
+            this.serverContextMenu.Name = "serverContextMenu";
+            this.serverContextMenu.Size = new System.Drawing.Size(114, 26);
+            // 
+            // refreshToolStripMenuItem
+            // 
+            this.refreshToolStripMenuItem.Name = "refreshToolStripMenuItem";
+            this.refreshToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.refreshToolStripMenuItem.Text = "&Refresh";
+            this.refreshToolStripMenuItem.Click += new System.EventHandler(this.refreshToolStripMenuItem_Click);
+            // 
+            // refreshToolStripMenuItem1
+            // 
+            this.refreshToolStripMenuItem1.Name = "refreshToolStripMenuItem1";
+            this.refreshToolStripMenuItem1.Size = new System.Drawing.Size(152, 22);
+            this.refreshToolStripMenuItem1.Text = "&Refresh";
+            this.refreshToolStripMenuItem1.Click += new System.EventHandler(this.refreshToolStripMenuItem_Click);
             // 
             // MainForm
             // 
@@ -506,6 +532,7 @@
             this.clonePage.ResumeLayout(false);
             this.clonePage.PerformLayout();
             this.databaseContextMenu.ResumeLayout(false);
+            this.serverContextMenu.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -552,6 +579,9 @@
         private System.Windows.Forms.ToolStripProgressBar toolStripProgressBar;
         private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel;
         private System.Windows.Forms.ListBox progressList;
+        private System.Windows.Forms.ContextMenuStrip serverContextMenu;
+        private System.Windows.Forms.ToolStripMenuItem refreshToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem refreshToolStripMenuItem1;
     }
 }
 

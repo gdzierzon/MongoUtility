@@ -2,12 +2,16 @@
 using System.Collections.Generic;
 using System.IO;
 using MongoDB.Bson;
+using MongoDB.Bson.IO;
+using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
+using MongoUtility.Common.Interfaces.Dto;
 using MongoUtility.Common.Interfaces.Mongo;
+using MongoUtility.Common.Mongo.Extensions;
 
 namespace MongoUtility.Common.Mongo
 {
-    public class Server
+    public class Server: IServer
     {
         private MongoUtility.Common.Rx.EventAggregator EventAggregator => MongoUtility.Common.Rx.EventAggregator.Aggregator;
 
@@ -67,22 +71,62 @@ namespace MongoUtility.Common.Mongo
             }
         }
 
-        public void BackupDatabase(string databaseName, string backupLocation)
+        public void BackupDatabase(BackupInformation backup)
         {
 
-            var currentDB = Client.GetDatabase(databaseName);
-            var collection = currentDB.GetCollection<BsonDocument>("Metrics");
+            var currentDB = Client.GetDatabase(backup.DatabaseName);
+            var collections = currentDB.ListCollections().ToListAsync().Result;
 
-            var items = collection.FindAsync(new BsonDocument()).Result.ToListAsync().Result;
-            Stream ms = new MemoryStream();
-            StreamWriter sw = new StreamWriter($"{backupLocation}\\Metrics.bson");
-            BinaryWriter br = new BinaryWriter(sw.BaseStream);
-            //br.Write();
+            if (!Directory.Exists(backup.Directory))
+            {
+                Directory.CreateDirectory(backup.Directory);
+            }
+            if (!Directory.Exists(backup.DatabaseDirectory))
+            {
+                Directory.CreateDirectory(backup.DatabaseDirectory);
+            }
+
+            collections.ForEach(c =>
+            {
+                var name = c["name"].AsString;
+                var collection = currentDB.GetCollection<BsonDocument>(c["name"].AsString);
+                collection.DumpData(backup.DatabaseDirectory, name);
+                collection.DumpInformation(backup.DatabaseDirectory, name);
+                backup.Log($"{name} has been backed up");
+            });
+
+
+
         }
 
         public void DropDatabase(string databaseName)
         {
             Client.DropDatabase(databaseName);
+        }
+
+        public void DesieralizeFile(string fileName)
+        {
+            StreamReader sr = new StreamReader(fileName);
+            
+            BsonReader bsonReader = new BsonBinaryReader(sr.BaseStream);
+            //var bsonBytes = bsonReader.ToBson();
+            int count = 0;
+            while (!bsonReader.IsAtEndOfFile())
+            {
+                count++;
+                try
+                {
+                    var bson = BsonSerializer.Deserialize<BsonDocument>(bsonReader);
+                    var test = bson.ToJson();
+                }
+                catch (Exception)
+                {
+                    
+                }
+            }
+
+            var counter = count;
+
         }
     }
 }
