@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using MongoDB.Bson;
 using MongoDB.Bson.IO;
@@ -26,27 +27,42 @@ namespace MongoUtility.Common.Mongo.Extensions
         {
             var indexes = collection.Indexes.ListAsync().Result.ToList();
             var options = new BsonDocument().ToJson();
+            var indexList = new List<string>();
 
             StringBuilder sb = new StringBuilder();
             sb.Append("{\"options\":{},\"indexes\":[");
             indexes.ForEach(i =>
             {
-                var _v = i["v"].AsInt32;
-                var _key = i["key"].AsBsonDocument;
-                var _id = _key["_id"].AsInt32;
-                var _name = i["name"].AsString;
-                var _ns = i["ns"].AsString;
+                var keys = i.Names.ToList();
+                var kvps = new List<string>();
 
+                
+                keys.ForEach(key =>
+                {
+                    switch (key)
+                    {
+                        case "v":
+                        case "unique":
+                            kvps.Add($"\"{key}\":{i[key]}");
+                            break;
+                        case "key":
+                            var doc = i[key].AsBsonDocument;
+                            var docKeys = doc.Names.ToList();
+                            var indexKeys = new List<string>();
 
-                sb.Append("{");
-                sb.AppendFormat("\"v\":{0},", _v);
-                sb.Append("\"key\":{");
-                sb.AppendFormat("\"_id\":{0}", _id);
-                sb.Append("},");
-                sb.AppendFormat("\"name\":\"{0}\",", _name);
-                sb.AppendFormat("\"ns\":\"{0}\"", _ns);
-                sb.Append("}");
+                            docKeys.ForEach(docKey => indexKeys.Add($"\"{docKey}\":{doc[docKey]}"));
+                            kvps.Add("\"key\":{"+ string.Join(",",indexKeys)+ "}");
+
+                            break;
+                        default:
+                            kvps.Add($"\"{key}\":\"{i[key]}\"");
+                            break;
+                    }
+                });
+                var indexLineItem = string.Join(",", kvps);
+                indexList.Add("{"+indexLineItem+"}");
             });
+            sb.Append(string.Join(",", indexList));
             sb.Append("]}");
             
             
