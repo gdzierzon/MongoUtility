@@ -35,18 +35,22 @@ namespace MongoUtility.UI.Win.Controllers
         {
             try
             {
+                restore.Status = ProcessStatuses.Started;
                 restore.Log("Beginning restore process.");
                 
                 Compression.UnZip(restore);
 
                 restore.Log("Unzip complete");
 
-                var mongoRestore = new MongoRestore(restore);
-                mongoRestore.RestoreDatabase();
+                //var mongoRestore = new MongoRestore(restore);
+                //mongoRestore.RestoreDatabase();
 
-                restore.Log("mongorestore.exe complete.");
+                restore.MongoServer.RestoreDatabase(restore);
 
-                Directory.Delete(restore.Directory);
+                restore.Status = ProcessStatuses.Completed;
+                restore.Log("Database restore complete.");
+
+                Directory.Delete(restore.Directory, true);
                 
             }
             catch (Exception ex)

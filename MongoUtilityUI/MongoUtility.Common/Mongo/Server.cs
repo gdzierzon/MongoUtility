@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Security.Permissions;
 using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
@@ -8,11 +10,13 @@ using MongoDB.Driver;
 using MongoUtility.Common.Interfaces.Dto;
 using MongoUtility.Common.Interfaces.Mongo;
 using MongoUtility.Common.Mongo.Extensions;
+//using Newtonsoft.Json;
 
 namespace MongoUtility.Common.Mongo
 {
     public class Server: IServer
     {
+        //private JsonSerializer JsonSerializer = new JsonSerializer();
         private MongoUtility.Common.Rx.EventAggregator EventAggregator => MongoUtility.Common.Rx.EventAggregator.Aggregator;
 
         private IMongoClient Client { get; set; }
@@ -99,33 +103,94 @@ namespace MongoUtility.Common.Mongo
 
         }
 
+        public void RestoreDatabase(RestoreInformation restore)
+        {
+            restore.Status = ProcessStatuses.InProgress;
+            restore.Log($"Restore of {restore.DatabaseRestoreName} started.");
+
+            try
+            {
+                Client.DropDatabase(restore.DatabaseName);
+
+                var db = Client.GetDatabase(restore.DatabaseName);
+
+                var files = Directory.GetFiles(restore.DatabaseDirectory).Where(f => f.EndsWith(".bson")).ToList();
+
+                files.ForEach(f =>
+                {
+                    FileInfo fileInfo = new FileInfo(f);
+                    try
+                    {
+                        RestoreCollectionData(fileInfo, db);
+                        restore.Log($"{fileInfo.Name} restored.");
+                    }
+                    catch (Exception ex)
+                    {
+                        restore.Log($"Error restoring {fileInfo.Name}.");
+                    }
+                });
+
+                restore.Log($"Restore complete.");
+            }
+            catch (Exception ex)
+            {
+                restore.Log($"Error restoring {ex.Message}.");
+            }
+
+        }
+
         public void DropDatabase(string databaseName)
         {
             Client.DropDatabase(databaseName);
         }
 
-        public void DesieralizeFile(string fileName)
+        public void RestoreCollectionStructure(FileInfo fileInfo, IMongoDatabase database)
         {
-            StreamReader sr = new StreamReader(fileName);
+            string collectionName = fileInfo.Name.Replace(".bson", "");
+            var collection = database.GetCollection<BsonDocument>(collectionName);
+            var items = new List<BsonDocument>();
+
+            StreamReader sr = new StreamReader(fileInfo.FullName);
             
-            BsonReader bsonReader = new BsonBinaryReader(sr.BaseStream);
-            //var bsonBytes = bsonReader.ToBson();
-            int count = 0;
-            while (!bsonReader.IsAtEndOfFile())
+            var line = sr.ReadToEnd();
+            var jsonReader = new JsonReader(line);
+            var bson = BsonSerializer.Deserialize<BsonDocument>(jsonReader);
+            
+        }
+
+        public void RestoreCollectionData(FileInfo fileInfo, IMongoDatabase database)
+        {
+            string collectionName = fileInfo.Name.Replace(".bson", "");
+            var collection = database.GetCollection<BsonDocument>(collectionName);
+            var items = new List<BsonDocument>();
+            StreamReader sr = null;
+
+            try
             {
-                count++;
-                try
+                sr = new StreamReader(fileInfo.FullName);
+                BsonReader bsonReader = new BsonBinaryReader(sr.BaseStream);
+                while (!bsonReader.IsAtEndOfFile())
                 {
                     var bson = BsonSerializer.Deserialize<BsonDocument>(bsonReader);
-                    var test = bson.ToJson();
+                    items.Add(bson);
                 }
-                catch (Exception)
+
+                if (items.Any())
                 {
-                    
+                    collection.InsertMany(items);
+                }
+                else
+                {
+                    //this is a hack to force creation of the collection
+                    var doc = new BsonDocument();
+                    collection.InsertOne(doc);
+                    collection.DeleteMany(doc);
                 }
             }
-
-            var counter = count;
+            finally
+            {
+                sr?.Close();
+            }
 
         }
     }

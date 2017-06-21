@@ -74,7 +74,10 @@ namespace MongoUtility.UI.Win
             //backup subscriptions
             subscriptions.Add(EventAggregator.GetEvent<Message<BackupInformation>>()
                 .Subscribe(msg => UpdateProgress(msg.Body)));
-            
+
+            subscriptions.Add(EventAggregator.GetEvent<Message<RestoreInformation>>()
+                .Subscribe(msg => UpdateProgress(msg.Body)));
+
         }
 
         private void UpdateProgress(object item)

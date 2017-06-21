@@ -23,7 +23,7 @@ namespace MongoUtility.Common.Interfaces.Dto
             }
         }
 
-        public string DatabaseDirectory => $"{Directory}\\{DatabaseName}";
+        public virtual string DatabaseDirectory => $"{Directory}\\{DatabaseName}";
 
         public string File { get; set; }
 

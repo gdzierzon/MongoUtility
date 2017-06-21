@@ -7,5 +7,6 @@ namespace MongoUtility.Common.Interfaces.Mongo
         void CopyDatabase(string databaseName, string newDatabaseName);
         void DropDatabase(string databaseName);
         void BackupDatabase(BackupInformation backup);
+        void RestoreDatabase(RestoreInformation restore);
     }
 }

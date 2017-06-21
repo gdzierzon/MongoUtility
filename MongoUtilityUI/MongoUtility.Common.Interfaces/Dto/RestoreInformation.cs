@@ -23,6 +23,8 @@ namespace MongoUtility.Common.Interfaces.Dto
             }
         }
 
+        public override string DatabaseDirectory => $"{Directory}\\{DatabaseRestoreName}";
+
 
         protected override void Publish()
         {
