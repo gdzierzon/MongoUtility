@@ -38,12 +38,16 @@
             this.preferencesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.defaultBackupDirectoryToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
+            this.toolStripProgressBar = new System.Windows.Forms.ToolStripProgressBar();
+            this.toolStripStatusLabel = new System.Windows.Forms.ToolStripStatusLabel();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.mongoTree = new System.Windows.Forms.TreeView();
             this.panel1 = new System.Windows.Forms.Panel();
             this.mongoServerLabel = new System.Windows.Forms.Label();
+            this.progressList = new System.Windows.Forms.ListBox();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.backupPage = new System.Windows.Forms.TabPage();
+            this.dropDatabaseCheck = new System.Windows.Forms.CheckBox();
             this.backupButton = new System.Windows.Forms.Button();
             this.backupLocationButton = new System.Windows.Forms.Button();
             this.backupLocationTextBox = new System.Windows.Forms.TextBox();
@@ -57,15 +61,20 @@
             this.label3 = new System.Windows.Forms.Label();
             this.restoreDatabaseTextBox = new System.Windows.Forms.TextBox();
             this.label4 = new System.Windows.Forms.Label();
-            this.renamePage = new System.Windows.Forms.TabPage();
+            this.clonePage = new System.Windows.Forms.TabPage();
             this.renameDatabaseButton = new System.Windows.Forms.Button();
             this.renameNewDatabaseTextBox = new System.Windows.Forms.TextBox();
             this.label6 = new System.Windows.Forms.Label();
             this.renameCurrentDatabaseTextBox = new System.Windows.Forms.TextBox();
             this.label5 = new System.Windows.Forms.Label();
             this.folderBrowserDialog = new System.Windows.Forms.FolderBrowserDialog();
-            this.dropDatabaseCheck = new System.Windows.Forms.CheckBox();
+            this.databaseContextMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.dropDatabaseToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.serverContextMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.refreshToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.refreshToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
+            this.statusStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
@@ -74,7 +83,9 @@
             this.tabControl1.SuspendLayout();
             this.backupPage.SuspendLayout();
             this.restorePage.SuspendLayout();
-            this.renamePage.SuspendLayout();
+            this.clonePage.SuspendLayout();
+            this.databaseContextMenu.SuspendLayout();
+            this.serverContextMenu.SuspendLayout();
             this.SuspendLayout();
             // 
             // mongoImagesList
@@ -107,7 +118,7 @@
             this.preferencesToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.defaultBackupDirectoryToolStripMenuItem});
             this.preferencesToolStripMenuItem.Name = "preferencesToolStripMenuItem";
-            this.preferencesToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.preferencesToolStripMenuItem.Size = new System.Drawing.Size(135, 22);
             this.preferencesToolStripMenuItem.Text = "&Preferences";
             // 
             // defaultBackupDirectoryToolStripMenuItem
@@ -119,11 +130,25 @@
             // 
             // statusStrip1
             // 
-            this.statusStrip1.Location = new System.Drawing.Point(0, 326);
+            this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.toolStripProgressBar,
+            this.toolStripStatusLabel});
+            this.statusStrip1.Location = new System.Drawing.Point(0, 468);
             this.statusStrip1.Name = "statusStrip1";
             this.statusStrip1.Size = new System.Drawing.Size(1053, 22);
             this.statusStrip1.TabIndex = 4;
             this.statusStrip1.Text = "statusStrip1";
+            // 
+            // toolStripProgressBar
+            // 
+            this.toolStripProgressBar.Name = "toolStripProgressBar";
+            this.toolStripProgressBar.Size = new System.Drawing.Size(100, 16);
+            this.toolStripProgressBar.Visible = false;
+            // 
+            // toolStripStatusLabel
+            // 
+            this.toolStripStatusLabel.Name = "toolStripStatusLabel";
+            this.toolStripStatusLabel.Size = new System.Drawing.Size(0, 17);
             // 
             // splitContainer1
             // 
@@ -139,8 +164,9 @@
             // 
             // splitContainer1.Panel2
             // 
+            this.splitContainer1.Panel2.Controls.Add(this.progressList);
             this.splitContainer1.Panel2.Controls.Add(this.tabControl1);
-            this.splitContainer1.Size = new System.Drawing.Size(1053, 302);
+            this.splitContainer1.Size = new System.Drawing.Size(1053, 444);
             this.splitContainer1.SplitterDistance = 257;
             this.splitContainer1.SplitterWidth = 6;
             this.splitContainer1.TabIndex = 5;
@@ -155,7 +181,7 @@
             this.mongoTree.Margin = new System.Windows.Forms.Padding(4);
             this.mongoTree.Name = "mongoTree";
             this.mongoTree.SelectedImageIndex = 0;
-            this.mongoTree.Size = new System.Drawing.Size(257, 265);
+            this.mongoTree.Size = new System.Drawing.Size(257, 407);
             this.mongoTree.TabIndex = 2;
             this.mongoTree.NodeMouseClick += new System.Windows.Forms.TreeNodeMouseClickEventHandler(this.mongoTree_NodeMouseClick);
             // 
@@ -181,18 +207,30 @@
             this.mongoServerLabel.TabIndex = 0;
             this.mongoServerLabel.Text = "Mongo Server";
             // 
+            // progressList
+            // 
+            this.progressList.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
+            this.progressList.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.progressList.ForeColor = System.Drawing.Color.White;
+            this.progressList.FormattingEnabled = true;
+            this.progressList.ItemHeight = 19;
+            this.progressList.Location = new System.Drawing.Point(0, 163);
+            this.progressList.Name = "progressList";
+            this.progressList.Size = new System.Drawing.Size(790, 281);
+            this.progressList.TabIndex = 8;
+            // 
             // tabControl1
             // 
             this.tabControl1.Controls.Add(this.backupPage);
             this.tabControl1.Controls.Add(this.restorePage);
-            this.tabControl1.Controls.Add(this.renamePage);
-            this.tabControl1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tabControl1.Controls.Add(this.clonePage);
+            this.tabControl1.Dock = System.Windows.Forms.DockStyle.Top;
             this.tabControl1.Font = new System.Drawing.Font("Corbel", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.tabControl1.Location = new System.Drawing.Point(0, 0);
             this.tabControl1.Margin = new System.Windows.Forms.Padding(4);
             this.tabControl1.Name = "tabControl1";
             this.tabControl1.SelectedIndex = 0;
-            this.tabControl1.Size = new System.Drawing.Size(790, 302);
+            this.tabControl1.Size = new System.Drawing.Size(790, 163);
             this.tabControl1.TabIndex = 0;
             // 
             // backupPage
@@ -208,10 +246,20 @@
             this.backupPage.Margin = new System.Windows.Forms.Padding(4);
             this.backupPage.Name = "backupPage";
             this.backupPage.Padding = new System.Windows.Forms.Padding(4);
-            this.backupPage.Size = new System.Drawing.Size(782, 270);
+            this.backupPage.Size = new System.Drawing.Size(782, 131);
             this.backupPage.TabIndex = 0;
             this.backupPage.Text = "Backup";
             this.backupPage.UseVisualStyleBackColor = true;
+            // 
+            // dropDatabaseCheck
+            // 
+            this.dropDatabaseCheck.AutoSize = true;
+            this.dropDatabaseCheck.Location = new System.Drawing.Point(90, 90);
+            this.dropDatabaseCheck.Name = "dropDatabaseCheck";
+            this.dropDatabaseCheck.Size = new System.Drawing.Size(129, 23);
+            this.dropDatabaseCheck.TabIndex = 6;
+            this.dropDatabaseCheck.Text = "Drop Database";
+            this.dropDatabaseCheck.UseVisualStyleBackColor = true;
             // 
             // backupButton
             // 
@@ -285,7 +333,7 @@
             this.restorePage.Margin = new System.Windows.Forms.Padding(4);
             this.restorePage.Name = "restorePage";
             this.restorePage.Padding = new System.Windows.Forms.Padding(4);
-            this.restorePage.Size = new System.Drawing.Size(782, 270);
+            this.restorePage.Size = new System.Drawing.Size(782, 131);
             this.restorePage.TabIndex = 1;
             this.restorePage.Text = "Restore";
             this.restorePage.UseVisualStyleBackColor = true;
@@ -350,19 +398,19 @@
             this.label4.TabIndex = 6;
             this.label4.Text = "Restore Database:";
             // 
-            // renamePage
+            // clonePage
             // 
-            this.renamePage.Controls.Add(this.renameDatabaseButton);
-            this.renamePage.Controls.Add(this.renameNewDatabaseTextBox);
-            this.renamePage.Controls.Add(this.label6);
-            this.renamePage.Controls.Add(this.renameCurrentDatabaseTextBox);
-            this.renamePage.Controls.Add(this.label5);
-            this.renamePage.Location = new System.Drawing.Point(4, 28);
-            this.renamePage.Name = "renamePage";
-            this.renamePage.Size = new System.Drawing.Size(782, 270);
-            this.renamePage.TabIndex = 2;
-            this.renamePage.Text = "Rename";
-            this.renamePage.UseVisualStyleBackColor = true;
+            this.clonePage.Controls.Add(this.renameDatabaseButton);
+            this.clonePage.Controls.Add(this.renameNewDatabaseTextBox);
+            this.clonePage.Controls.Add(this.label6);
+            this.clonePage.Controls.Add(this.renameCurrentDatabaseTextBox);
+            this.clonePage.Controls.Add(this.label5);
+            this.clonePage.Location = new System.Drawing.Point(4, 28);
+            this.clonePage.Name = "clonePage";
+            this.clonePage.Size = new System.Drawing.Size(782, 131);
+            this.clonePage.TabIndex = 2;
+            this.clonePage.Text = "Clone";
+            this.clonePage.UseVisualStyleBackColor = true;
             // 
             // renameDatabaseButton
             // 
@@ -417,21 +465,47 @@
             // 
             this.folderBrowserDialog.Description = "Select default backup location";
             // 
-            // dropDatabaseCheck
+            // databaseContextMenu
             // 
-            this.dropDatabaseCheck.AutoSize = true;
-            this.dropDatabaseCheck.Location = new System.Drawing.Point(90, 90);
-            this.dropDatabaseCheck.Name = "dropDatabaseCheck";
-            this.dropDatabaseCheck.Size = new System.Drawing.Size(129, 23);
-            this.dropDatabaseCheck.TabIndex = 6;
-            this.dropDatabaseCheck.Text = "Drop Database";
-            this.dropDatabaseCheck.UseVisualStyleBackColor = true;
+            this.databaseContextMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.refreshToolStripMenuItem1,
+            this.dropDatabaseToolStripMenuItem});
+            this.databaseContextMenu.Name = "databaseContextMenu";
+            this.databaseContextMenu.Size = new System.Drawing.Size(153, 70);
+            // 
+            // dropDatabaseToolStripMenuItem
+            // 
+            this.dropDatabaseToolStripMenuItem.Name = "dropDatabaseToolStripMenuItem";
+            this.dropDatabaseToolStripMenuItem.Size = new System.Drawing.Size(151, 22);
+            this.dropDatabaseToolStripMenuItem.Text = "&Drop Database";
+            this.dropDatabaseToolStripMenuItem.Click += new System.EventHandler(this.dropDatabaseToolStripMenuItem_Click);
+            // 
+            // serverContextMenu
+            // 
+            this.serverContextMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.refreshToolStripMenuItem});
+            this.serverContextMenu.Name = "serverContextMenu";
+            this.serverContextMenu.Size = new System.Drawing.Size(114, 26);
+            // 
+            // refreshToolStripMenuItem
+            // 
+            this.refreshToolStripMenuItem.Name = "refreshToolStripMenuItem";
+            this.refreshToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.refreshToolStripMenuItem.Text = "&Refresh";
+            this.refreshToolStripMenuItem.Click += new System.EventHandler(this.refreshToolStripMenuItem_Click);
+            // 
+            // refreshToolStripMenuItem1
+            // 
+            this.refreshToolStripMenuItem1.Name = "refreshToolStripMenuItem1";
+            this.refreshToolStripMenuItem1.Size = new System.Drawing.Size(152, 22);
+            this.refreshToolStripMenuItem1.Text = "&Refresh";
+            this.refreshToolStripMenuItem1.Click += new System.EventHandler(this.refreshToolStripMenuItem_Click);
             // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 19F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1053, 348);
+            this.ClientSize = new System.Drawing.Size(1053, 490);
             this.Controls.Add(this.splitContainer1);
             this.Controls.Add(this.statusStrip1);
             this.Controls.Add(this.menuStrip1);
@@ -442,6 +516,8 @@
             this.Load += new System.EventHandler(this.MainForm_Load);
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
+            this.statusStrip1.ResumeLayout(false);
+            this.statusStrip1.PerformLayout();
             this.splitContainer1.Panel1.ResumeLayout(false);
             this.splitContainer1.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).EndInit();
@@ -453,8 +529,10 @@
             this.backupPage.PerformLayout();
             this.restorePage.ResumeLayout(false);
             this.restorePage.PerformLayout();
-            this.renamePage.ResumeLayout(false);
-            this.renamePage.PerformLayout();
+            this.clonePage.ResumeLayout(false);
+            this.clonePage.PerformLayout();
+            this.databaseContextMenu.ResumeLayout(false);
+            this.serverContextMenu.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -489,13 +567,21 @@
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.ToolStripMenuItem defaultBackupDirectoryToolStripMenuItem;
         private System.Windows.Forms.FolderBrowserDialog folderBrowserDialog;
-        private System.Windows.Forms.TabPage renamePage;
+        private System.Windows.Forms.TabPage clonePage;
         private System.Windows.Forms.Button renameDatabaseButton;
         private System.Windows.Forms.TextBox renameNewDatabaseTextBox;
         private System.Windows.Forms.Label label6;
         private System.Windows.Forms.TextBox renameCurrentDatabaseTextBox;
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.CheckBox dropDatabaseCheck;
+        private System.Windows.Forms.ContextMenuStrip databaseContextMenu;
+        private System.Windows.Forms.ToolStripMenuItem dropDatabaseToolStripMenuItem;
+        private System.Windows.Forms.ToolStripProgressBar toolStripProgressBar;
+        private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel;
+        private System.Windows.Forms.ListBox progressList;
+        private System.Windows.Forms.ContextMenuStrip serverContextMenu;
+        private System.Windows.Forms.ToolStripMenuItem refreshToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem refreshToolStripMenuItem1;
     }
 }
 
