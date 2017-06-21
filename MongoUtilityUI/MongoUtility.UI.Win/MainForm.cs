@@ -6,17 +6,46 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Reactive.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using MongoUtility.Common.Interfaces.Dto;
+using MongoUtility.Common.Interfaces.Messaging;
 using MongoUtility.Common.Mongo;
 using MongoUtility.Common.SharpZip;
+using MongoUtility.UI.Win.Controllers;
 
 namespace MongoUtility.UI.Win
 {
+    public delegate void AddItemInvoker(object item);
     public partial class MainForm : Form
     {
+        private MongoUtility.Common.Rx.EventAggregator EventAggregator => MongoUtility.Common.Rx.EventAggregator.Aggregator;
+        private readonly IList<IDisposable> subscriptions = new List<IDisposable>();
+
+        public BackupController BackupController { get; } = BackupController.Controller;
+        public RestoreController RestoreController { get; } = RestoreController.Controller;
+
+        #region backup variables
+
+        public string BackupDatabaseName => databaseBackupTextBox.Text;
+
+        public string BackupFile => backupLocationTextBox.Text;
+
+        #endregion
+
+        #region restore variables
+        
+        public string RestoreFileName => importFileTextBox.Text;
+
+        private string RestoreDatabaseName => restoreDatabaseTextBox.Text;
+
+        #endregion
+
+        public string SelectedDatabase { get; set; }
+
         public string DefaultDirectory {
             get { return Properties.Settings.Default.BackupLocation; }
             set
@@ -25,7 +54,7 @@ namespace MongoUtility.UI.Win
                 Properties.Settings.Default.Save();
             }
         }
-
+        
         public Server MongoServer { get; set; }
         public MainForm()
         {
@@ -34,8 +63,43 @@ namespace MongoUtility.UI.Win
 
         private void MainForm_Load(object sender, EventArgs e)
         {
+            SetupSubscriptions();
             InitializeDialogs();
             LoadMongoTree();
+        }
+  
+
+        private void SetupSubscriptions()
+        {
+            //backup subscriptions
+            subscriptions.Add(EventAggregator.GetEvent<Message<BackupInformation>>()
+                .Subscribe(msg => UpdateProgress(msg.Body)));
+
+            subscriptions.Add(EventAggregator.GetEvent<Message<RestoreInformation>>()
+                .Subscribe(msg => UpdateProgress(msg.Body)));
+
+        }
+
+        private void UpdateProgress(object item)
+        {
+            if (progressList.InvokeRequired)
+            {
+                var ai = new AddItemInvoker(UpdateProgress);
+                this.Invoke(ai, item);
+            }
+            else
+            {
+                progressList.Items.Add(item);
+                int visibleItems = progressList.ClientSize.Height / progressList.ItemHeight;
+                progressList.TopIndex = Math.Max(progressList.Items.Count - visibleItems + 1, 0);
+
+                var message = item as BackupInformation;
+                if(message != null && message.Status == ProcessStatuses.Completed)
+                {
+                    LoadMongoTree();
+                }
+            }
+
         }
 
         private void InitializeDialogs()
@@ -68,13 +132,18 @@ namespace MongoUtility.UI.Win
 
             foreach (var database in MongoServer.DatabaseList)
             {
-                var databaseNode = new TreeNode(database)
+                if (!database.IsSystem)
                 {
-                    ImageIndex = 1,
-                    SelectedImageIndex = 1,
-                    Name = database
-                };
-                serverNode.Nodes.Add(databaseNode);
+                    var databaseNode = new TreeNode(database.Name)
+                    {
+                        ImageIndex = 1,
+                        SelectedImageIndex = 1,
+                        Name = database.Name
+                    };
+                    databaseNode.Tag = "database";
+                    databaseNode.ContextMenuStrip = databaseContextMenu;
+                    serverNode.Nodes.Add(databaseNode);
+                }
             }
 
             mongoTree.Nodes.Add(serverNode);
@@ -84,8 +153,17 @@ namespace MongoUtility.UI.Win
         private void mongoTree_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e)
         {
             var node = e.Node;
-            databaseBackupTextBox.Text = node.Name;
-            renameCurrentDatabaseTextBox.Text = node.Name;
+            SelectedDatabase = node.Name;
+
+            if (e.Button == MouseButtons.Left)
+            {
+                databaseBackupTextBox.Text = SelectedDatabase;
+                renameCurrentDatabaseTextBox.Text = SelectedDatabase;
+            }
+            else if (e.Button == MouseButtons.Right && e.Node.Tag == "database")
+            {
+                databaseContextMenu.Show();
+            }
         }
 
         private void backupLocationButton_Click(object sender, EventArgs e)
@@ -100,65 +178,14 @@ namespace MongoUtility.UI.Win
 
         private void backupButton_Click(object sender, EventArgs e)
         {
-            EnableButtons(false);
-
-            var databaseName = databaseBackupTextBox.Text;
-            var backupFile = backupLocationTextBox.Text;
-            FileInfo fi = new FileInfo(backupFile);
-            string fileName = fi.Name.Replace(fi.Extension, "");
-            var backupLocation = $"{fi.Directory}\\{fileName}";
-
-            try
+            var backupInfo = new BackupInformation(BackupDatabaseName, BackupFile, EventAggregator, MongoServer)
             {
-
-                BackupDatabase(databaseName, backupLocation);
-
-                Compression.Zip(backupLocation, backupFile);
-
-                if (dropDatabaseCheck.Checked)
-                {
-                    MongoServer.DropDatabase(databaseName);
-                    LoadMongoTree();
-                }
-
-                MessageBox.Show($"{databaseName} has been successfully backed up.");
-            }
-            catch
-            {
-                MessageBox.Show($"There was an error backing up {databaseName}.");
-            }
-            finally
-            {
-                EnableButtons(true);
-            }
-        }
-
-        private void EnableButtons(bool enabled)
-        {
-            backupButton.Enabled = enabled;
-            importDatabaseButton.Enabled = enabled;
-            renameDatabaseButton.Enabled = enabled;
-        }
-
-        private void BackupDatabase(string databaseName, string backupLocation)
-        {
-
-            var process = new Process
-            {
-                StartInfo = new ProcessStartInfo()
-                {
-                    FileName = "mongodump.exe",
-                    Arguments = $"/db:{databaseName} /out:\"{backupLocation}\"",
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    CreateNoWindow = true
-                }
+                Compress = true,
+                DropDatabase = dropDatabaseCheck.Checked
             };
-            process.Start();
-            string output = process.StandardOutput.ReadToEnd();
-            string error = process.StandardError.ReadToEnd();
-            process.WaitForExit();
+
+            EventAggregator.Publish(new Message<BackupInformation>(backupInfo)
+            { MessageType = MessageTypes.Backup });
         }
 
         private void importFileLocationButton_Click(object sender, EventArgs e)
@@ -173,62 +200,16 @@ namespace MongoUtility.UI.Win
 
         private void importDatabaseButton_Click(object sender, EventArgs e)
         {
-            EnableButtons(false);
 
-            var fileName = importFileTextBox.Text;
-            FileInfo fi = new FileInfo(fileName);
-            var guid = Guid.NewGuid();
-            var unZipFolder = $"{fi.Directory}\\temp{guid}";
-            var newDatabaseName = restoreDatabaseTextBox.Text;
+            var restoreInfo = new RestoreInformation(RestoreDatabaseName, RestoreFileName, EventAggregator, MongoServer);
 
-            try
+            EventAggregator.Publish(new Message<RestoreInformation>(restoreInfo)
             {
+                MessageType = MessageTypes.Restore
+            });
 
-                Compression.UnZip(fileName, unZipFolder);
-
-                var di = new DirectoryInfo(unZipFolder);
-                var backupDatabaseName = di.GetDirectories()[0].Name;
-                var restoreDatabaseLocation = $"{unZipFolder}\\{backupDatabaseName}";
-
-                RestoreDatabase(newDatabaseName, restoreDatabaseLocation);
-
-                di.Delete(true);
-
-                LoadMongoTree();
-
-                MessageBox.Show($"{newDatabaseName} has been successfully restored.");
-            }
-            catch
-            {
-                MessageBox.Show($"There was an error restoring {newDatabaseName}.");
-            }
-            finally
-            {
-                EnableButtons(true);
-            }
         }
 
-        private void RestoreDatabase(string newDatabaseName, string restoreDatabaseLocation)
-        {
-
-            var process = new Process
-            {
-                StartInfo = new ProcessStartInfo()
-                {
-                    FileName = "mongorestore.exe",
-                    Arguments = $"/db:{newDatabaseName} /dir:\"{restoreDatabaseLocation}\"",
-                    UseShellExecute = false,
-                    RedirectStandardOutput = false,
-                    RedirectStandardError = false,
-                    CreateNoWindow = true,
-                    WindowStyle = ProcessWindowStyle.Hidden
-                }
-            };
-            process.Start();
-            //string output = process.StandardOutput.ReadToEnd();
-            //string error = process.StandardError.ReadToEnd();
-            process.WaitForExit();
-        }
 
         private void defaultBackupDirectoryToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -249,37 +230,36 @@ namespace MongoUtility.UI.Win
 
         private void renameDatabaseButton_Click(object sender, EventArgs e)
         {
-            EnableButtons(false);
-
             var currentDatabase = renameCurrentDatabaseTextBox.Text;
             var guid = Guid.NewGuid();
             var tempFolder = $"{DefaultDirectory}\\temp{guid}";
+            var newDatabase = renameNewDatabaseTextBox.Text;
+
 
             try
             {
-
-                var newDatabase = renameNewDatabaseTextBox.Text;
-                var restoreLocation = $"{tempFolder}\\{currentDatabase}";
-
-                BackupDatabase(currentDatabase, tempFolder);
-                RestoreDatabase(newDatabase, restoreLocation);
-
-                MongoServer.DropDatabase(currentDatabase);
-
-                Directory.Delete(tempFolder, true);
+                MongoServer.CopyDatabase(currentDatabase, newDatabase);
 
                 LoadMongoTree();
 
-                MessageBox.Show($"{currentDatabase} has been successfully renamed to {newDatabase}.");
+                toolStripStatusLabel.Text = $"{currentDatabase} has been successfully renamed to {newDatabase}.";
             }
             catch
             {
-                MessageBox.Show($"There was an error renaming {currentDatabase}.");
+                toolStripStatusLabel.Text = $"There was an error renaming {currentDatabase}.";
             }
-            finally
-            {
-                EnableButtons(true);
-            }
+        }
+
+        private void dropDatabaseToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            MongoServer.DropDatabase(SelectedDatabase);
+
+            LoadMongoTree();
+        }
+
+        private void refreshToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            LoadMongoTree();
         }
     }
 }
