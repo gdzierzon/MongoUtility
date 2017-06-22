@@ -126,7 +126,7 @@ namespace MongoUtility.Common.Mongo
                     }
                     catch (Exception ex)
                     {
-                        restore.Log($"Error restoring {fileInfo.Name}.");
+                        restore.Log($"Error restoring {fileInfo.Name}. Error: {ex.Message}.");
                     }
                 });
 

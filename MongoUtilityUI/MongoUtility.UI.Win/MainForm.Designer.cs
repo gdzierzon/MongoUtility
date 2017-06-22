@@ -69,10 +69,10 @@
             this.label5 = new System.Windows.Forms.Label();
             this.folderBrowserDialog = new System.Windows.Forms.FolderBrowserDialog();
             this.databaseContextMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.refreshToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.dropDatabaseToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.serverContextMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.refreshToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.refreshToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
@@ -471,7 +471,14 @@
             this.refreshToolStripMenuItem1,
             this.dropDatabaseToolStripMenuItem});
             this.databaseContextMenu.Name = "databaseContextMenu";
-            this.databaseContextMenu.Size = new System.Drawing.Size(153, 70);
+            this.databaseContextMenu.Size = new System.Drawing.Size(152, 48);
+            // 
+            // refreshToolStripMenuItem1
+            // 
+            this.refreshToolStripMenuItem1.Name = "refreshToolStripMenuItem1";
+            this.refreshToolStripMenuItem1.Size = new System.Drawing.Size(151, 22);
+            this.refreshToolStripMenuItem1.Text = "&Refresh";
+            this.refreshToolStripMenuItem1.Click += new System.EventHandler(this.refreshToolStripMenuItem_Click);
             // 
             // dropDatabaseToolStripMenuItem
             // 
@@ -490,16 +497,9 @@
             // refreshToolStripMenuItem
             // 
             this.refreshToolStripMenuItem.Name = "refreshToolStripMenuItem";
-            this.refreshToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.refreshToolStripMenuItem.Size = new System.Drawing.Size(113, 22);
             this.refreshToolStripMenuItem.Text = "&Refresh";
             this.refreshToolStripMenuItem.Click += new System.EventHandler(this.refreshToolStripMenuItem_Click);
-            // 
-            // refreshToolStripMenuItem1
-            // 
-            this.refreshToolStripMenuItem1.Name = "refreshToolStripMenuItem1";
-            this.refreshToolStripMenuItem1.Size = new System.Drawing.Size(152, 22);
-            this.refreshToolStripMenuItem1.Text = "&Refresh";
-            this.refreshToolStripMenuItem1.Click += new System.EventHandler(this.refreshToolStripMenuItem_Click);
             // 
             // MainForm
             // 
@@ -510,6 +510,7 @@
             this.Controls.Add(this.statusStrip1);
             this.Controls.Add(this.menuStrip1);
             this.Font = new System.Drawing.Font("Corbel", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "MainForm";
             this.Text = "Mongo Database Utility";

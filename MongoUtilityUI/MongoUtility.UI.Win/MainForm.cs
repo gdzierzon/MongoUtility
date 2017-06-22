@@ -147,6 +147,7 @@ namespace MongoUtility.UI.Win
             }
 
             mongoTree.Nodes.Add(serverNode);
+            serverNode.ContextMenuStrip = serverContextMenu;
             serverNode.ExpandAll();
         }
 
@@ -160,7 +161,7 @@ namespace MongoUtility.UI.Win
                 databaseBackupTextBox.Text = SelectedDatabase;
                 renameCurrentDatabaseTextBox.Text = SelectedDatabase;
             }
-            else if (e.Button == MouseButtons.Right && e.Node.Tag == "database")
+            else if (e.Button == MouseButtons.Right && e.Node.Tag.ToString() == "database")
             {
                 databaseContextMenu.Show();
             }
